@@ -1,0 +1,181 @@
+local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/main/source.lua'))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Margad's Simple Scripts",
+    LoadingTitle = "Loading...",
+    LoadingSubtitle = "Simple Exploits",
+    Theme = "Dark",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "MargadsSimpleScripts",
+        FileName = "Settings"
+    }
+})
+
+local ScriptsTab = Window:CreateTab("Scripts", 1234567890)
+local ScriptsSection = ScriptsTab:CreateSection("Simple Scripts")
+
+-- WalkSpeed
+ScriptsSection:CreateSlider({
+    Name = "WalkSpeed",
+    Range = {16, 200},
+    Increment = 1,
+    CurrentValue = 16,
+    Flag = "WalkSpeedSlider",
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+    end,
+})
+
+-- JumpPower
+ScriptsSection:CreateSlider({
+    Name = "JumpPower",
+    Range = {50, 300},
+    Increment = 5,
+    CurrentValue = 50,
+    Flag = "JumpPowerSlider",
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.JumpPower = Value
+    end,
+})
+
+-- GoTo Player
+ScriptsSection:CreateInput({
+    Name = "GoTo Player",
+    PlaceholderText = "Enter player name",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(Text)
+        local target = game.Players:FindFirstChild(Text)
+        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            local myHRP = game.Players.LocalPlayer.Character:WaitForChild("HumanoidRootPart")
+            myHRP.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 5, 0)
+        end
+    end,
+})
+
+-- Fly Toggle
+local flying = false
+local flyspeed = 2
+
+ScriptsSection:CreateToggle({
+    Name = "Fly",
+    CurrentValue = false,
+    Flag = "FlyToggle",
+    Callback = function(state)
+        flying = state
+        local plr = game.Players.LocalPlayer
+        local char = plr.Character or plr.CharacterAdded:Wait()
+        local hrp = char:WaitForChild("HumanoidRootPart")
+
+        if state then
+            local bv = Instance.new("BodyVelocity")
+            bv.Name = "FlyForce"
+            bv.Velocity = Vector3.new()
+            bv.MaxForce = Vector3.new(1, 1, 1) * 1e5
+            bv.Parent = hrp
+
+            game:GetService("RunService").Heartbeat:Connect(function()
+                if flying and hrp:FindFirstChild("FlyForce") then
+                    local moveDir = plr:GetMouse().Hit.LookVector
+                    hrp.FlyForce.Velocity = moveDir * flyspeed * 10
+                end
+            end)
+        else
+            if hrp:FindFirstChild("FlyForce") then
+                hrp.FlyForce:Destroy()
+            end
+        end
+    end,
+})
+
+-- Fly Speed
+ScriptsSection:CreateSlider({
+    Name = "Fly Speed",
+    Range = {1, 10},
+    Increment = 1,
+    CurrentValue = 2,
+    Flag = "FlySpeedSlider",
+    Callback = function(Value)
+        flyspeed = Value
+    end,
+})
+
+-- Noclip
+local noclip = false
+
+ScriptsSection:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Flag = "NoclipToggle",
+    Callback = function(Value)
+        noclip = Value
+        game:GetService("RunService").Stepped:Connect(function()
+            if noclip then
+                for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+                    if v:IsA("BasePart") and v.CanCollide == true then
+                        v.CanCollide = false
+                    end
+                end
+            end
+        end)
+    end,
+})
+
+-- UnNoclip
+ScriptsSection:CreateButton({
+    Name = "UnNoclip",
+    Callback = function()
+        noclip = false
+        for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.CanCollide = true
+            end
+        end
+    end
+})
+
+-- ESP
+local espEnabled = false
+local espObjects = {}
+
+ScriptsSection:CreateToggle({
+    Name = "ESP",
+    CurrentValue = false,
+    Flag = "ESP_Toggle",
+    Callback = function(Value)
+        espEnabled = Value
+        if Value then
+            for _, player in pairs(game.Players:GetPlayers()) do
+                if player ~= game.Players.LocalPlayer and player.Character then
+                    local box = Instance.new("BoxHandleAdornment")
+                    box.Name = "ESP"
+                    box.Size = Vector3.new(4, 6, 2)
+                    box.Color3 = Color3.new(1, 0, 0)
+                    box.Adornee = player.Character:FindFirstChild("HumanoidRootPart")
+                    box.AlwaysOnTop = true
+                    box.ZIndex = 5
+                    box.Transparency = 0.5
+                    box.Parent = player.Character
+                    table.insert(espObjects, box)
+                end
+            end
+        else
+            for _, v in pairs(espObjects) do
+                if v and v.Parent then v:Destroy() end
+            end
+            espObjects = {}
+        end
+    end,
+})
+
+-- UnESP (redundant if toggle exists but added as button too)
+ScriptsSection:CreateButton({
+    Name = "UnESP",
+    Callback = function()
+        for _, v in pairs(espObjects) do
+            if v and v.Parent then v:Destroy() end
+        end
+        espObjects = {}
+        espEnabled = false
+    end
+}) 
